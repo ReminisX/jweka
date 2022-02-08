@@ -1,10 +1,14 @@
 package com.nari.jweka.weka;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 import weka.experiment.InstanceQuery;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Remove;
 
+@Component
 public class WekaData {
 
     /**
@@ -39,17 +43,44 @@ public class WekaData {
 
     /**
      * 根据sql语句获取数据
-     * @param sql
+     * @param table 数据库表格名称
      * @throws Exception
+     * @return 数据实体类Instances
      */
-    public void getDataFromDataSource(String sql) throws Exception {
+    public Instances getDataFromDataSource(String table) throws Exception {
         InstanceQuery instanceQuery = new InstanceQuery();
         instanceQuery.setUsername(username);
         instanceQuery.setPassword(password);
-        instanceQuery.setQuery(sql);
+        instanceQuery.setQuery("select * from " + table);
         this.data = instanceQuery.retrieveInstances();
+        return this.data;
     }
 
+    /**
+     * 通过路径获取数据源
+     * @param path 路径
+     * @return Instances数据
+     * @throws Exception
+     */
+    public Instances getDataFromFile(String path) throws Exception {
+        this.dataSource = new DataSource(path);
+        this.data = this.dataSource.getDataSet();
+        return this.data;
+    }
 
+    /**
+     * 根据条件对数据进行过滤
+     * @param options 过滤条件
+     * @return 过滤后的数据集Instances
+     * @throws Exception
+     */
+    public Instances filteData(String[] options) throws Exception {
+        Remove remove = new Remove();
+        remove.setOptions(options);
+        remove.setInputFormat(data);
+        Instances newData = Filter.useFilter(data, remove);
+        this.data = newData;
+        return newData;
+    }
 
 }
