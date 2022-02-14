@@ -1,12 +1,12 @@
 package com.nari.jweka.weka;
 
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import weka.core.Instances;
-import weka.core.converters.ConverterUtils.DataSource;
+import weka.core.converters.ConverterUtils.*;
 import weka.experiment.InstanceQuery;
-import weka.filters.Filter;
-import weka.filters.unsupervised.attribute.Remove;
 
 @Component
 public class WekaData {
@@ -14,31 +14,25 @@ public class WekaData {
     /**
      * 数据库配置信息
      */
-    @Value("${spring.datasource.username}")
-    private String username;
-    @Value("${spring.datasource.password}")
-    private String password;
+    private static String username;
 
-    /**
-     * 数据源
-     */
-    private DataSource dataSource;
+    private static String password;
 
-    private Instances data;
-
-    /**
-     * 无参构造器
-     */
-    public WekaData(){}
+    @Autowired
+    public WekaData(@Value("${spring.datasource.username}") String username, @Value("${spring.datasource.password}") String password){
+        WekaData.username = username;
+        WekaData.password = password;
+    }
 
     /**
      * 根据路径读取数据，数据类型根据文件后缀确定
      * @param path 数据源路径
      * @throws Exception
      */
-    public WekaData(String path) throws Exception {
-        this.dataSource = new DataSource(path);
-        this.data = this.dataSource.getDataSet();
+    public static Instances getDataByFile(String path) throws Exception {
+        DataSource dataSource = new DataSource(path);
+        Instances data = dataSource.getDataSet();
+        return data;
     }
 
     /**
@@ -47,40 +41,26 @@ public class WekaData {
      * @throws Exception
      * @return 数据实体类Instances
      */
-    public Instances getDataFromDataSource(String table) throws Exception {
+    public static Instances getDataByDataBase(String table) throws Exception {
         InstanceQuery instanceQuery = new InstanceQuery();
         instanceQuery.setUsername(username);
         instanceQuery.setPassword(password);
         instanceQuery.setQuery("select * from " + table);
-        this.data = instanceQuery.retrieveInstances();
-        return this.data;
+        return instanceQuery.retrieveInstances();
     }
 
     /**
-     * 通过路径获取数据源
-     * @param path 路径
-     * @return Instances数据
+     * 数据写入文件
+     * @param path arff文件路径
+     * @param data 源数据
      * @throws Exception
      */
-    public Instances getDataFromFile(String path) throws Exception {
-        this.dataSource = new DataSource(path);
-        this.data = this.dataSource.getDataSet();
-        return this.data;
+    public static void instances2Arff(String path, Instances data) throws Exception {
+        DataSink.write(path, data);
     }
 
-    /**
-     * 根据条件对数据进行过滤
-     * @param options 过滤条件
-     * @return 过滤后的数据集Instances
-     * @throws Exception
-     */
-    public Instances filteData(String[] options) throws Exception {
-        Remove remove = new Remove();
-        remove.setOptions(options);
-        remove.setInputFormat(data);
-        Instances newData = Filter.useFilter(data, remove);
-        this.data = newData;
-        return newData;
+    public static void instances2DataSource(Instances data){
+
     }
 
 }
